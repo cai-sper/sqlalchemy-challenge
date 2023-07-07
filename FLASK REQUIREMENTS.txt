@@ -1,0 +1,42 @@
+API SQLite Connection & Landing Page (10 points)
+To receive all points, your Flask application must
+Correctly generate the engine to the correct sqlite file (2 points)
+
+Use automap_base() and reflect the database schema (2 points)
+
+Correctly save references to the tables in the sqlite file (measurement and station) (2 points)
+
+Correctly create and binds the session between the python app and database (2 points)
+
+Display the available routes on the landing page (2 points)
+
+API Static Routes (15 points)
+To receive all points, your Flask application must include
+A precipitation route that:
+
+Returns json with the date as the key and the value as the precipitation (3 points)
+
+Only returns the jsonified precipitation data for the last year in the database (3 points)
+
+A stations route that:
+
+Returns jsonified data of all of the stations in the database (3 points)
+A tobs route that:
+
+Returns jsonified data for the most active station (USC00519281) (3 points)
+
+Only returns the jsonified data for the last year of data (3 points)
+
+API Dynamic Route (15 points)
+To receive all points, your Flask application must include
+A start route that:
+
+Accepts the start date as a parameter from the URL (2 points)
+
+Returns the min, max, and average temperatures calculated from the given start date to the end of the dataset (4 points)
+
+A start/end route that:
+
+Accepts the start and end dates as parameters from the URL (3 points)
+
+Returns the min, max, and average temperatures calculated from the given start date to the given end date (6 points)
