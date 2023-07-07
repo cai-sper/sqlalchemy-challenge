@@ -47,12 +47,19 @@ app = Flask(__name__)
 @app.route("/")
 def welcome():
     return (
-        f"Available Routes:<br/>"
-        f"/api/v1.0/precipitation<br/>"
-        f"/api/v1.0/stations<br/>"
-        f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/start<br/>"
-        f"/api/v1.0/start-end"
+        f"Available Routes:<br/><br/>"
+        f"Precipitation in the last year<br/>"
+        f"/api/v1.0/precipitation<br/><br/>"
+        f"List of stations<br/>"
+        f"/api/v1.0/stations<br/><br/>"
+        f"Weather in the last year<br/>"
+        f"/api/v1.0/tobs<br/><br/>"
+        f"Weather information from desired start date to 2017-08-23<br/>"
+        f"Please enter your desired start date in yyyy-mm-dd format at the end of the URL<br/>"
+        f"/api/v1.0/yyyy-mm-dd<br/><br/>"
+        f"Weather information from desired start date to desired end date<br/>"
+        f"Please enter your desired start date at the end of the URL followed by a slash and your desired end date<br/>"
+        f"/api/v1.0/yyyy-mm-dd/yyyy-mm-dd"
     )
 
 # Create a route that returns json with the date as the key and the value as the precipitation
@@ -83,8 +90,6 @@ def precipitation():
         all_precipitation.append(prcp_dict)
     return jsonify(all_precipitation)
 
-    session.close()
-
 # Create a route that returns jsonified data of all of the stations in the database
 @app.route("/api/v1.0/stations")
 def stations():
@@ -101,8 +106,6 @@ def stations():
         all_stations.append(stn_dict)
     return jsonify(all_stations)
 
-    session.close()
-
 # Create a route that returns jsonified data for the most active station (USC00519281)
 # And only returns the jsonified data for the last year of data
 @app.route("/api/v1.0/tobs")
@@ -112,11 +115,9 @@ def tobs():
     # Query for the most recent date in the dataset
     most_recent_date_str = session.query(Measurement.date).order_by(Measurement.date.desc()).first()
     most_recent_date = dt.datetime.strptime(most_recent_date_str[0], '%Y-%m-%d').date()
-    print(f"Most recent date: {most_recent_date}")
         
     # Calculate the earliest date by subtracting 365 days from the most recent date
     earliest_date = most_recent_date - dt.timedelta(days=365)
-    print(f"Earliest date: {earliest_date}")
 
     # Perform a query to retrieve the the last 12 months of tobs data for the most active station
     tobs_results = session.query(Measurement.tobs, Measurement.date,  Measurement.station).\
@@ -135,17 +136,57 @@ def tobs():
 
 # Create a start route that accepts the start date as a parameter from the URL 
 # And returns the min, max, and average temperatures calculated from the given start date to the end of the dataset
-# @app.route("/api/v1.0/start")
-#     def start():
+@app.route("/api/v1.0/<start>")
+def start_date(start):
+    
+    #change the date from string to datetime
+    query_start = dt.datetime.strptime(start, '%Y-%m-%d').date()
+    
+    # Make a list for the min, max & average tobs depending on the start date entered
+    start_date_results = [func.min(Measurement.tobs),
+                         func.max(Measurement.tobs),
+                         func.avg(Measurement.tobs)]
+    
+    # Filter the dates from the start date
+    start_results = session.query(*start_date_results).\
+        filter(func.strftime('%Y-%m-%d', Measurement.date) >=query_start).all()
+    print(start_results)
 
+    # Since the last date in the data set is 2017-08-23
+    return (f"Temperature from {start} to 2017-08-23 (last recorded date):<br/>"
+            f"Minimum temperature: {round(start_results[0][0], 1)} °F<br/>"
+            f"Maximum temperature: {round(start_results[0][1], 1)} °F<br/>"
+            f"Average temperature: {round(start_results[0][2], 1)} °F")
 
 # Create a start/end route that accepts the start and end dates as parameters from the URL
 # And returns the min, max, and average temperatures calculated from the given start date to the given end date
-#@app.route("/api/v1.0/start-end")
-#    def start-end():
+@app.route("/api/v1.0/<start>/<end>")
+def start_end_date(start, end):
+
+    #change the date from string to datetime
+    query_Start = dt.datetime.strptime(start, '%Y-%m-%d').date()
+    query_End = dt.datetime.strptime(end, '%Y-%m-%d').date()
+
+    # Make a list for the min, max & average tobs depending on the start date entered
+    start_end_date_results = [func.min(Measurement.tobs),
+                             func.max(Measurement.tobs),
+                             func.avg(Measurement.tobs)]
+    
+    # Filter the dates from the start date
+    start_end_results = session.query(*start_end_date_results).\
+        filter(func.strftime('%Y-%m-%d', Measurement.date) >=query_Start).\
+        filter(func.strftime('%Y-%m-%d', Measurement.date) <=query_End).all()
+    
+    session.close()
+
+    #we know that the last date in the data set is 2017-08-23
+    return (f"Temperature from {start} to {end}:<br/>"
+            f"Minimum temperature: {round(start_end_results[0][0], 1)} °F<br/>"
+            f"Maximum temperature: {round(start_end_results[0][1], 1)} °F<br/>"
+            f"Average temperature: {round(start_end_results[0][2], 1)} °F")
 
 # Run Flask
 if __name__ == "__main__": 
     app.run(debug=True)
 
-session.close()
+session.close()  
